@@ -1,0 +1,45 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import LabelEncoder
+df = pd.read_csv('Customer-Churn-Records.csv')
+df.head(10)
+data = df.drop(['RowNumber', 'Surname', 'Geography', 'Gender', 'Card Type'], axis=1)
+data.head()
+data.duplicated().sum()
+data.isnull().sum()
+data.shape
+threshold_balance = data["Balance"].mean()
+threshold_active = data["IsActiveMember"].mean()
+
+
+
+
+def create_purchase_label(row):
+    if row['IsActiveMember'] > threshold_active and row['Balance'] > threshold_balance:
+        return 1
+    else:
+        return 0
+data['PurchaseLabel'] = data.apply(create_purchase_label, axis=1)
+print(data[['Balance', 'IsActiveMember', 'PurchaseLabel']])
+(data['PurchaseLabel']).sum()
+y = data['PurchaseLabel']
+x = data.drop(['PurchaseLabel'] , axis=1 )
+x.head()
+y.head()
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)
+
+clf = DecisionTreeClassifier(random_state=42)
+
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+print("Classification Report:\n", classification_report(y_test, y_pred))
+from sklearn.tree import export_graphviz
+import graphviz
+
+dot_data = export_graphviz(clf, out_file=None, feature_names=x.columns, class_names=["No", "Yes"], filled=True, rounded=True)
+graph = graphviz.Source(dot_data)
+graph.render("decision_tree")
